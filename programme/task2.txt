@@ -1,0 +1,94 @@
+start 		-> PROGRAM IDENT ; varDec compStmt .
+ 
+varDec 		-> VAR varDecList 
+		| ε
+
+# Left recursion removal of "varDecList -> varDecList identListType ; | identListType ;"
+varDecList 	-> identListType ; varDecList'
+varDecList'	-> {identListType ;} ε
+
+identListType	-> identList : type
+ 
+# Left recursion removal of "identList -> identList , IDENT | IDENT"
+identList 	-> IDENT identList'
+identList'	-> {, IDENT} ε
+		 
+type		-> simpleType
+		| ARRAY [ NUM .. NUM ] OF simpleType
+ 
+simpleType	-> INTEGER
+		| REAL
+		| BOOLEAN
+ 
+compStmt	-> BEGIN stmtList END
+
+# Left recursion removal of "stmtList -> stmtList ; statement | statement"
+stmtList	-> statment stmtList'
+stmtList'	-> {; statement} ε
+ 
+statement	-> assignStmt
+		| compStmt
+		| ifStmt
+		| whileStmt
+		| forStmt
+		| READ ( exprList )
+		| WRITE ( exprList )
+
+# Left factorization of "assignStmt -> IDENT := expr | IDENT [ expr ] := expr"
+assignStmt	-> IDENT assignStmt'
+assignStmt'	-> := expr | [ expr ] := expr
+ 
+ifStmt		-> IF expr THEN statement [ elsePart ]
+ 
+elsePart	-> ELSE statement
+ 
+whileStmt	-> WHILE expr DO statement
+ 
+forStmt		-> FOR IDENT := expr toPart expr DO statement
+ 
+toPart		-> TO
+		| DOWNTO
+ 
+# Left factorization of "expr -> simpleExpr relOp simpleExpr | simpleExpr"
+expr		-> simpleExpr expr'
+expr'		-> ε | relOp simpleExpr
+
+# Left recursion removal of "exprList -> exprList , expr | expr" 
+exprList	-> expr exprList'
+exprList'	-> {, expr} ε
+
+# Left recursion removal of "simpleExpr	-> simpleExpr addOp term | term" 
+simpleExpr	-> term simpleExpr'
+simpleExpr'	-> {addOp term} ε
+
+# Left recursion removal of "term -> term mulOp factor | factor" 
+term		-> factor term'
+term'		-> {mulOp factor} ε
+
+# Left factorization of "factor -> ... | IDENT | IDENT [ expr ]"
+factor		-> NUM
+		| FALSE
+		| TRUE
+		| IDENT factorIdent'
+		| NOT factor
+		| - factor
+		| ( expr )
+		| STRING
+factorIdent'	-> ε | [ expr ]
+ 
+relOp		-> <
+		| <=
+		| >
+		| >=
+		| =
+		| <>
+ 
+addOp		-> +
+		| -
+		| OR
+ 
+mulOp		-> *
+		| /
+		| DIV
+		| MOD
+		| AND
